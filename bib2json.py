@@ -14,15 +14,36 @@ for bib in bib_database.entries:
 	# publication nodes
 	p_node = {}
 	p_node['name'] = bib['ID'] # ID (e.g., John2010Venue)
-	if bib['ENTRYTYPE'] == 'article': # article type equals to 2
-		p_node['type'] = 2
-	elif bib['ENTRYTYPE'] == 'inproceedings': # inproc type equals to 3
-		p_node['type'] = 3
-	elif bib['ENTRYTYPE'] == 'book': # book type equals to 4
-		p_node['type'] = 4
-	elif bib['ENTRYTYPE'] == 'misc': # misc type equals to 5
-		p_node['type'] = 5
-	p_node['icon'] = 'icon/pnode.png' 
+	p_node['author'] = bib['author']	
+	p_node['type'] = 2 # publication node equals to 2
+	# add icon
+	p_node['icon'] = 'icon/pnode.png'
+	p_node['title'] = bib['title']
+	# pages
+	if 'pages' in bib:
+		p_node['pages'] = bib['pages'].replace("--", "-")
+	# year	
+	if 'year' in bib:
+		p_node['year'] = bib['year']
+	# keyword
+	if 'keyword' in bib:
+		p_node['keyword'] = bib['keyword']
+	# Publisher
+	if 'publisher' in bib:
+		p_node['publisher'] = bib['publisher']
+	# DOI
+	if 'doi' in bib:
+		p_node['doi'] = bib['doi']
+	# ISBN
+	if 'ISBN' in bib:
+		p_node['isbn'] = bib['isbn']
+	# for journal
+	if 'journal' in bib:
+		p_node['journal'] = bib['journal']
+	if 'number' in bib:
+		p_node['number'] = bib['number']
+	if 'volume' in bib:
+		p_node['volume'] = bib['volume']
 	nodes.append(p_node)
 	
 	# author nodes
@@ -30,7 +51,7 @@ for bib in bib_database.entries:
 	for author in authors:
 		a_node = {}
 		author_name = author.strip()
-		print author_name
+		# print author_name
 		if re.search(",", author_name):
 			m = re.split(",", author_name)
 			a_node['name'] = (m[1] + " " + m[0]).strip()
