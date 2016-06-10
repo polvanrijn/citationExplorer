@@ -2,6 +2,11 @@
 <meta charset="utf-8">
 <title>Scholarmap</title>
 <style>
+
+.ui-helper-hidden-accessible {
+	display: none;
+}
+
 #header {
 	height: 150px;
 }
@@ -50,8 +55,14 @@
 <body>
 <div id="header">
 	<h1>Scholarmap: a bibliography visualization tool</h1>
-	<button>Toggle label</button>
+	<button>Toggle Label</button><br><br>
+	<div class="ui-widget">
+		<input id="search"><button type="button" onclick="searchNode()">Search</button>
+	</div>
 </div>
+<script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js" ></script> </script>
+<script src="http://code.jquery.com/ui/1.11.0/themes/smoothness/jquery-ui.css"> </script>
 <script src="//d3js.org/d3.v3.min.js"></script>
 <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
 <script>
@@ -74,7 +85,7 @@ var link, node, tip, text;
 
 d3.json("bibtex.json", function(error, json) {
     if (error) throw error;
-
+	
     force
 		.nodes(json.nodes)
         .links(json.links)
@@ -100,15 +111,17 @@ d3.json("bibtex.json", function(error, json) {
 			if (d.type == 1) {
 				tiptest = d.name;
 			} else {
-				tiptest = ('title' in d ? "<b>Title</b>: " + d.title + "<br>" : "") +
+				tiptest = "<b>ID</b>: " + d.name + "<br>" +
 						('author' in d ? "<b>Author</b>: " + d.author + "<br>" : "") +
-						('pages' in d ? "<b>Pages</b>: " + d.pages + "<br>" : "") +
-						('year' in d ? "<b>Year</b>: " + d.year + "<br>" : "") +
-						('keyword' in d ? "<b>Keyword</b>: " + d.keyword + "<br>" : "") +
-						('publisher' in d ? "<b>Publisher</b>: " + d.publisher + "<br>" : "") +
+						('title' in d ? "<b>Title</b>: " + d.title + "<br>" : "") +
+						('booktitle' in d ? "<b>Booktitle</b>: " + d.booktitle + "<br>" : "") +
 						('journal' in d ? "<b>Journal</b>: " + d.journal + "<br>" : "") +
 						('volume' in d ? "<b>Volume</b>: " + d.volume + "<br>" : "") +
-						('number' in d ? "<b>Number</b>: " + d.number : "");
+						('number' in d ? "<b>Number</b>: " + d.number + "<br>": "") +
+						('pages' in d ? "<b>Pages</b>: " + d.pages + "<br>" : "") +
+						('year' in d ? "<b>Year</b>: " + d.year + "<br>" : "") +
+						('publisher' in d ? "<b>Publisher</b>: " + d.publisher + "<br>" : "") +
+						('keyword' in d ? "<b>Keyword</b>: " + d.keyword : "");
 			}
 			return tiptest;
 		});
@@ -146,7 +159,42 @@ d3.json("bibtex.json", function(error, json) {
 
         node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
     });
+
+	// search 
+	var optArray = [];
+	for (var i = 0; i < json.nodes.length - 1; i++) {
+		optArray.push(json.nodes[i].name);
+	}
+	optArray = optArray.sort();
+
+	$(function () {
+		$("#search").autocomplete({
+		    source: optArray
+		});
+	});
+
+	
 });
+
+function searchNode() {
+	//find the node
+	var selectedVal = document.getElementById('search').value;
+	var jnode = svg.selectAll(".node");
+	if (selectedVal == "none") {
+	    jnode.style("stroke", "white").style("stroke-width", "1");
+	} else {
+	    var selected = jnode.filter(function (d, i) {
+	        return d.name != selectedVal;
+	    });
+	    selected.style("opacity", "0");
+	    var jlink = svg.selectAll(".link")
+	    jlink.style("opacity", "0");
+	    d3.selectAll(".node, .link").transition()
+	        .duration(5000)
+	        .style("opacity", 1);
+	}
+}
+
 
 </script>
 

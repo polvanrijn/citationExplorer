@@ -1,8 +1,16 @@
 import bibtexparser
 import json
 import re
+import sys
 
-with open('ref.bib') as bibtex_file:
+try:
+	bibfile = str(sys.argv[1])
+	jsonfile = str(sys.argv[2])
+except IndexError:
+	print('Arguments are not enough.')
+	raise
+
+with open(bibfile) as bibtex_file:
     bib_database = bibtexparser.load(bibtex_file)
 
 nodes = []
@@ -28,16 +36,22 @@ for bib in bib_database.entries:
 	# keyword
 	if 'keyword' in bib:
 		p_node['keyword'] = bib['keyword']
-	# Publisher
+	# Publisher, organization
 	if 'publisher' in bib:
 		p_node['publisher'] = bib['publisher']
+	# Organization
+	if 'organization' in bib:
+		p_node['organization'] = bib['organization']	
 	# DOI
 	if 'doi' in bib:
 		p_node['doi'] = bib['doi']
 	# ISBN
 	if 'ISBN' in bib:
 		p_node['isbn'] = bib['isbn']
-	# for journal
+	# booktitle
+	if 'booktitle' in bib:
+		p_node['booktitle'] = bib['booktitle']
+	# journal
 	if 'journal' in bib:
 		p_node['journal'] = bib['journal']
 	if 'number' in bib:
@@ -67,5 +81,5 @@ for bib in bib_database.entries:
 		link['target'] = nodes.index(p_node)
 		links.append(link)
 
-with open('bibtex.json', 'w') as outfile:
+with open(jsonfile, 'w') as outfile:
     json.dump(bibjson, outfile)
