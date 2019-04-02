@@ -1,7 +1,270 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
-<title>Scholarmap Examples</title>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script type="text/javascript" src="https://d3js.org/d3.v3.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
 <body>
-<a href="./scholarmap/scholarmap.html">Scholarmap</a></p>
-<a href="./90srappers/90srappers.html">90s rappers</a>
+<header>
+    <nav>
+    <ul>
+        <li>Only present authors that occur at least <input type="number" min="1" value="1" class="slider"></li>
+        <li><a href="#">View all labels</a></li>
+        <li><a href="#">View authors list-wise</a></li>
+    </ul>
+    </nav>
+    <!--<button>Toggle labels</button>-->
+</header>
+
+<div id="network"></div>
+<script type="text/javascript">
+
+    //Set margins and sizes
+    var margin = {
+        top: 0,
+        bottom: 0,
+        right: 0,
+        left: 0
+    };
+
+    var minimum_connection = 3;
+
+    var width = 960 - margin.left - margin.right;
+    var height = 700 - margin.top - margin.bottom;
+    //Load Color Scale
+    var c10 = d3.scale.category10();
+    //Create an SVG element and append it to the DOM
+    var svg = d3.select("#network")
+        .append("svg")
+        .attr("width", "100%")
+        .attr("height", "100%")
+        .call(d3.behavior.zoom().on("zoom", function () {
+            svg.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+        }))
+        .append("g");
+
+    var label;
+
+    //Load External Data
+    d3.json("sample.json", function (dataset) {
+        //Extract data from dataset
+        var nodes = dataset.nodes,
+            links = dataset.links;
+        //Create Force Layout
+        var force = d3.layout.force()
+            .size([width, height])
+            .nodes(nodes)
+            .links(links)
+            .charge(-200)
+            .linkDistance(200);
+
+        //Add links to SVG
+        var link = svg.selectAll(".link")
+            .data(links)
+            .enter()
+            .append("line")
+            .attr("stroke-width", function (d) {
+                return d.weight / 3;
+            })
+            .attr("class", "link");
+        //Add nodes to SVG
+        var node = svg.selectAll(".node")
+            .data(nodes)
+            .enter()
+            .append("g")
+            .attr("class", "node");
+        //Add labels to each node
+        // var label = node.append("text")
+        //     .attr("dx", 12)
+        //     .attr("dy", "0.35em")
+        //     .attr("font-size", function (d) {
+        //         console.log(d);
+        //         return d.weight * 3;
+        //     })
+        //     .text(function (d) {
+        //         return d.name;
+        //     });
+
+        var tip = d3.tip()
+            .attr('class', 'd3-tip')
+            .attr("dx", 12)
+            .attr("dy", "0.35em")
+            .html(function (d) {
+                return "<strong>" + d.name + "</strong> (" + d.weight + ")";
+            });
+
+        svg.call(tip);
+
+        //Add circles to each node
+        var circle = node.append("circle")
+            .attr("r", function (d) {
+                return d.weight * 3;
+            })
+
+            .attr("fill", function (d) {
+                return c10(d.weight * 10);
+            })
+            .on('mouseover', tip.show)
+            .on('mouseout', tip.hide)
+        ;
+        //This function will be executed for every tick of force layout
+        force.on("tick", function () {
+            //Set X and Y of node
+            node.attr("r", function (d) {
+                return d.weight;
+            })
+                .attr("cx", function (d) {
+                    return d.x;
+                })
+                .attr("cy", function (d) {
+                    return d.y;
+                });
+
+            //Set X, Y of link
+            link.attr("x1", function (d) {
+                return d.source.x;
+            });
+            link.attr("y1", function (d) {
+                return d.source.y;
+            });
+            link.attr("x2", function (d) {
+                return d.target.x;
+            });
+            link.attr("y2", function (d) {
+                return d.target.y;
+            });
+            //Shift node a little
+            node.attr("transform", function (d) {
+                return "translate(" + d.x + "," + d.y + ")";
+            });
+
+        });
+
+        d3.select('button').on('click', function () {
+            if (label) {
+                label.remove();
+                label = null;
+            } else {
+                label = node.append("text")
+                    .attr("text-anchor", "middle")
+                    .attr("y", 20)
+                    .text(function (d) {
+                        return d.name
+                    });
+            }
+        });
+
+        //Start the force layout calculation
+        force.start();
+
+        //add drag capabilities
+        var drag_handler = d3.drag()
+            .on("start", drag_start)
+            .on("drag", drag_drag)
+            .on("end", drag_end);
+
+        drag_handler(node);
+
+
+//add zoom capabilities
+        var zoom_handler = d3.zoom()
+            .on("zoom", zoom_actions);
+
+        zoom_handler(svg);
+
+        /** Functions **/
+
+
+//Drag functions
+//d is the node
+        function drag_start(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+//make sure you can't drag the circle outside the box
+        function drag_drag(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+
+        function drag_end(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+//Zoom functions
+        function zoom_actions() {
+            g.attr("transform", d3.event.transform)
+        }
+
+        function tickActions() {
+            //update circle positions each tick of the simulation
+            node
+                .attr("cx", function (d) {
+                    return d.x;
+                })
+                .attr("cy", function (d) {
+                    return d.y;
+                });
+
+            //update link positions
+            link
+                .attr("x1", function (d) {
+                    return d.source.x;
+                })
+                .attr("y1", function (d) {
+                    return d.source.y;
+                })
+                .attr("x2", function (d) {
+                    return d.target.x;
+                })
+                .attr("y2", function (d) {
+                    return d.target.y;
+                });
+        }
+    });
+
+    //	filter function
+    function filter() {
+        //	add and remove nodes from data based on type filters
+        store.nodes.forEach(function (n) {
+            if (!typeFilterList.includes(n.group) && n.filtered) {
+                n.filtered = false;
+                graph.nodes.push($.extend(true, {}, n));
+            } else if (typeFilterList.includes(n.group) && !n.filtered) {
+                n.filtered = true;
+                graph.nodes.forEach(function (d, i) {
+                    if (n.id === d.id) {
+                        graph.nodes.splice(i, 1);
+                    }
+                });
+            }
+        });
+
+        //	add and remove links from data based on availability of nodes
+        store.links1.forEach(function (l) {
+            if (!(typeFilterList.includes(l.sourceGroup) || typeFilterList.includes(l.targetGroup)) && l.filtered) {
+                l.filtered = false;
+                graph.links1.push($.extend(true, {}, l));
+            } else if ((typeFilterList.includes(l.sourceGroup) || typeFilterList.includes(l.targetGroup)) && !l.filtered) {
+                l.filtered = true;
+                graph.links1.forEach(function (d, i) {
+                    if (l.id === d.id) {
+                        graph.links1.splice(i, 1);
+                    }
+                });
+            }
+        });
+    }
+
+
+</script>
 </body>
+</html>
